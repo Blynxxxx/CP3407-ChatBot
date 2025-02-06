@@ -109,3 +109,43 @@ GitHub: For repository hosting and collaboration.<br>
 
 The chatbot will be trained on data provided by the Student Affairs department, including orientation schedules, event descriptions, and FAQs. All data will be handled with strict adherence to privacy regulations, ensuring that student information and interactions remain confidential.
 
+# Workshop 2
+Please perform the following activities and write a report that illustrates you have performed and completed the activities. You need to present your report to your lecturer before the end of the class or at the beginning of week 2 workshop.
+## Activity One
+<b>Interview<b/><br>
+1) What do you want?<br>
+A chatbot that answers student's questions on Orientation<br>
+
+2) What should the chatbot be like?<br>
+It has to reply in a natural language.<br>
+
+3) What kind of answers should the chatbot know?<br>
+It will summarize information from the orientation pdf<br>
+
+4) How should the chatbot be accessed<br>
+In the orientation site at the bottom<br>
+
+5) How different are information from one orientation to another<br>
+Structure and events remain the same. Only time and place change.<br>
+
+## Activity Two
+<b>User Story </b><br>
+Title : Obtain precise information<br>
+Estimate: 13 days<br>
+Description: A user will be able to obtain relevant information about orientation from the chatbot<br>
+
+Title: Pick the question from the options<br>
+Estimate: 3 days<br>
+Description: Users want to see predefined options when they start interacting with the chatbot, so they can quickly get fixed answers to common questions without typing.<br>
+
+Title: Ask question freely<br>
+Estimate: 13 days<br>
+Description: Users want to ask questions in their own words, so the chatbot can provide personalized responses based on its trained model.<br>
+
+Title: Get useful suggestion<br>
+Estimate: 13 days<br>
+Description: A user will get useful suggestion from the chatbot regarding what to prepare for orientation (e.g. documents for student pass)<br>
+
+Title: Feedback Collection<br>
+Estimate: 8 days<br>
+Description: Users can provide feedback about experience with the chatbot, so that the service can improve and better meet their needs.
