@@ -130,22 +130,22 @@ Structure and events remain the same. Only time and place change.<br>
 
 ## Activity Two
 ## User Story
-Title: Obtain precise information<br>
+1. Title: Obtain precise information<br>
 Estimate: 13 days<br>
 Description: A user will be able to obtain relevant information about orientation from the chatbot<br>
 
-Title: Pick the question from the options<br>
+2. Title: Pick the question from the options<br>
 Estimate: 3 days<br>
 Description: Users want to see predefined options when they start interacting with the chatbot, so they can quickly get fixed answers to common questions without typing.<br>
 
-Title: Ask question freely<br>
+3. Title: Ask question freely<br>
 Estimate: 13 days<br>
 Description: Users want to ask questions in their own words, so the chatbot can provide personalized responses based on its trained model.<br>
 
-Title: Get useful suggestion<br>
+4. Title: Get useful suggestion<br>
 Estimate: 13 days<br>
 Description: A user will get useful suggestion from the chatbot regarding what to prepare for orientation (e.g. documents for student pass)<br>
 
-Title: Feedback Collection<br>
+5. Title: Feedback Collection<br>
 Estimate: 8 days<br>
 Description: Users can provide feedback about experience with the chatbot, so that the service can improve and better meet their needs.
