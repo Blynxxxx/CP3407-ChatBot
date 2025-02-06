@@ -112,7 +112,7 @@ The chatbot will be trained on data provided by the Student Affairs department, 
 # Workshop 2
 Please perform the following activities and write a report that illustrates you have performed and completed the activities. You need to present your report to your lecturer before the end of the class or at the beginning of week 2 workshop.
 ## Activity One
-<b>Interview<b/><br>
+## Interview Questions
 1) What do you want?<br>
 A chatbot that answers student's questions on Orientation<br>
 
@@ -129,8 +129,8 @@ In the orientation site at the bottom<br>
 Structure and events remain the same. Only time and place change.<br>
 
 ## Activity Two
-<b>User Story </b><br>
-Title : Obtain precise information<br>
+## User Story
+Title: Obtain precise information<br>
 Estimate: 13 days<br>
 Description: A user will be able to obtain relevant information about orientation from the chatbot<br>
 
