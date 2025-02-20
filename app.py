@@ -10,7 +10,7 @@ from langchain.chains.question_answering import load_qa_chain
 
 # Load environment variables
 load_dotenv()
-gemini_api_key = os.getenv("GEMINI_API_KEY") 
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 # Sidebar contents
 with st.sidebar:
@@ -48,37 +48,37 @@ def main():
             length_function=len
         )
         chunks = text_splitter.split_text(text=text)
-        st.write(chunks)
+        # st.write(chunks)
 
-        # # Initialize Gemini embeddings
-        # embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
+        # Initialize Gemini embeddings
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
 
-        # # Create vector store
-        # store_name = os.path.basename(pdf_path).replace('.pdf', '')  # Get file name without extension
-        # store_path = f"vector_stores/{store_name}"
+        # Create vector store
+        store_name = os.path.basename(pdf_path).replace('.pdf', '')  # Get file name without extension
+        store_path = f"vector_stores/{store_name}"
 
-        # if os.path.exists(store_path):
-        #     vector_store = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
-        # else:
-        #     vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-        #     vector_store.save_local(store_path)
+        if os.path.exists(store_path):
+            vector_store = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
+        else:
+            vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+            vector_store.save_local(store_path)
 
-        # # Accept user questions/query
-        # query = st.text_input("💬 Ask a question about Orientation:")
+        # Accept user questions/query
+        query = st.text_input("💬 Ask a question about Orientation:")
 
-        # if query:
-        #     docs = vector_store.similarity_search(query=query, k=3)
+        if query:
+            docs = vector_store.similarity_search(query=query, k=3)
 
-        #     llm = GoogleGenerativeAI(model="gemini-pro", temperature=0)
-        #     chain = load_qa_chain(llm=llm, chain_type="stuff")
+            llm = GoogleGenerativeAI(model="gemini-pro", temperature=0)
+            chain = load_qa_chain(llm=llm, chain_type="stuff")
 
-        #     if docs:
-        #         response = chain.run(input_documents=docs, question=query)
-        #     else:
-        #         response = llm.invoke(query)  # Use AI to answer general questions
+            if docs:
+                response = chain.run(input_documents=docs, question=query)
+            else:
+                response = llm.invoke(query)  # Use AI to answer general questions
 
-        #     # Display response with background
-        #     st.markdown(f'<div style="background-color:#f4f4f4;padding:10px;border-radius:10px;">{response}</div>', unsafe_allow_html=True)
+            # Display response with background
+            st.markdown(f'<div style="background-color:#f4f4f4;padding:10px;border-radius:10px;">{response}</div>', unsafe_allow_html=True)
 
 if __name__ == '__main__':
     main()
