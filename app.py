@@ -7,6 +7,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, GoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
+import google.generativeai as genai
 
 # Load environment variables
 load_dotenv()
@@ -75,6 +76,7 @@ def main():
 
         # Accept user questions/query
         query = st.text_input("💬 Ask a question about Orientation:")
+        
 
         if query:
             with st.spinner("Finding information..."):
@@ -93,8 +95,8 @@ def main():
                 # )
 
                 prompt = (
-                    f"You are a JCUS Koalion and you are here to help Q&A regarding orientation information for new students."
-                    f"Based on the given information and text, answer the question: '{query}' in detail"
+                    f"You are a James Cook University  Koalion and you are here to help Q&A regarding orientation information for new students. if no information found to answer, refer "
+                    f"Based on the given information and text, answer the question: '{query}' in detail."
                     f"Example 1: Question: Where is the Explore Booth?; Response: The Explore Booth is in Block E"
                     f"Example 2: Question: What is the venue of Network with Lecturers and Peers?; Response: The Network with Lecturers and Peers is in Multi-Purpose Hall"
                     f"""Detail orientation timetable information:
@@ -119,8 +121,28 @@ def main():
 
                 if docs:
                     response = chain.run(input_documents=docs, question=prompt)
+
+                    # Check if the response indicates a negative result
+                    negative_indicators = [
+                        "not contain information",
+                        "the text only mentions",
+                        "no relevant information",
+                        "unable to answer",
+                        "not found",
+                        "does not provide",
+                        "don't know "
+                    ]
+
+
+                if not response or any(indicator in response.lower() for indicator in negative_indicators):
+                    # If the response is not satisfactory, use Gemini AI for a more general answer
+                    prompt = (
+                            f"You are a James Cook University Koalion. Answer the following question based on general knowledge: '{query}'. "
+                            "If you cannot find specific information, provide a helpful response."
+                        )
+                    response = llm.invoke(prompt)
                 else:
-                    response = "No relevant documents found."
+                    response = llm.invoke(prompt)
 
                 # Display response with background
                 st.markdown(f'<div style="background-color:#f4f4f4;padding:10px;border-radius:10px;">{response}</div>', unsafe_allow_html=True)
