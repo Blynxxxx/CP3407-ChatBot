@@ -17,7 +17,7 @@ print("Gemini API Key:", gemini_api_key)
 app = Flask(__name__)
 
 # Setting the PDF file path
-PDF_PATH = 'data/TR1S-Full-Time-Orientation-Schedule.pdf'
+PDF_PATH = 'uploaded_pdfs/TR1S-Full-Time-Orientation-Schedule.pdf'
 STORE_PATH = "vector_stores/orientation"
 
 # Set the storage path
@@ -28,7 +28,7 @@ os.makedirs(VECTOR_STORE_FOLDER, exist_ok=True)
 
 
 # Preprocess PDF and store vectors
-def process_pdf(pdf_path, store_path):
+def process_pdf(PDF_PATH, STORE_PATH):
     if os.path.exists(PDF_PATH):
 
         pdf_reader = PdfReader(PDF_PATH)
@@ -43,12 +43,12 @@ def process_pdf(pdf_path, store_path):
 
         # Processing vector storage
         if os.path.exists(STORE_PATH):
-            vector_stores = FAISS.load_local(STORE_PATH, embeddings, allow_dangerous_deserialization=True)
+            vector_store = FAISS.load_local(STORE_PATH, embeddings, allow_dangerous_deserialization=True)
         else:
-            vector_stores = FAISS.from_texts(chunks, embedding=embeddings)
-            vector_stores.save_local(STORE_PATH)
+            vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+            vector_store.save_local(STORE_PATH)
 
-        return vector_stores
+        return vector_store
     return None
 
 vector_store = process_pdf(PDF_PATH, STORE_PATH)

@@ -124,4 +124,5 @@ if user_input := st.chat_input(get_text("chat_placeholder")):
 
     st.session_state.messages.append({"role": "assistant", "content": chatbot_response})
     with st.chat_message(get_text("assistant")):
+
         st.markdown(chatbot_response)
