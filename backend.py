@@ -90,22 +90,59 @@ def chat():
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
     vector_store = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
 
-    docs = vector_store.similarity_search(query=query, k=3)
+    docs = vector_store.similarity_search(query=query, k=5)
 
         # Setting the Prompt
     prompt = (
-            f"Based on the documents, answer the question: '{query}' and check for the following information:\n"
-            f"1. Required Documents: Provide required documents if specified\n"
-            f"2. Orientation Schedule: Key dates and times for orientation activities.\n"
-            f"3. Venue Information: Location for the event asked\n"
-            f"4. Instructions for International Students: Any important notes or requirements specific to international students.\n"
-            f"5. Additional Resources: Mention any support services or resources available to students during orientation.\n"
-            f"Please ensure that the information is clear and well-organized."
-        )
-
-    llm = GoogleGenerativeAI(model="gemini-1.0-pro", temperature=0.2, api_version="v1")
+            f"You are a James Cook University  Koalion and you are here to help Q&A regarding orientation information for new students. if no information found to answer, refer "
+            f"Based on the given information and text, answer the question: '{query}' in detail."
+            f"Example 1: Question: Where is the Explore Booth?; Response: The Explore Booth is in Block E"
+            f"Example 2: Question: What is the venue of Network with Lecturers and Peers?; Response: The Network with Lecturers and Peers is in Multi-Purpose Hall"
+            f"""Detail orientation timetable information:
+            09:00 AM - 09:05 AM : Welcome Speech by Deputy Vice-Chancellor, Singapore; Welcome Speech by Acting Campus Dean & Head of Learning, Teaching and Student Engagement - Venue: Block C
+            09:05 AM - 09:10 AM : JCU 101 - Venue: Block C
+            09:10 AM to 10:25 AM : DigiLearn Workshop & Academic Advising - Venue: Block C
+            10:40 AM - 11:40 AM : Diploma and Bachelor of Business Programs - Venue: Block C
+            10:40 AM - 11:40 AM : Postgraduate Business and Postgraduate Qualifying; Programs - Business - Venue: Block C
+            10:40 AM - 11:40 AM : Bachelor of Environmental Science Programs - Venue: Block C
+            10:40 AM - 11:40 AM : Diploma and Bachelor of Arts and Psychological Science Programs - Venue: Block C
+            10:40 AM - 11:40 AM : Master of Psychological Science, Graduate Diploma of Psychology and Graduate Certificate of Psychological Science Programs - Venue: Block C
+            10:40 AM - 11:40 AM : Diploma, Bachelor, and Master of Information Technology and Science Programs - Venue: Block C
+            10:40 AM - 11:40 AM : Pre-University Foundation Programs - Venue: Block C
+            10:40 AM - 11:40 AM : Introduction to ELPP - Venue: Block C
+            01:30 PM to 03:00 PM : Explore Booths - Venue: Block E
+            03:00 PM to 05:00 PM : Network with Lecturers and Peers - Venue: Multipurpose Hall
+            """
+                    )
+                
+    llm = GoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)  # Adjust temperature
     chain = load_qa_chain(llm=llm, chain_type="stuff")
-    response = chain.run(input_documents=docs, question=prompt)
+
+    if docs:
+        response = chain.run(input_documents=docs, question=prompt)
+
+        # Check if the response indicates a negative result
+        negative_indicators = [
+            "not contain information",
+            "the text only mentions",
+            "no relevant information",
+            "unable to answer",
+            "not found",
+            "does not provide",
+            "don't know "
+        ]
+
+
+        if not response or any(indicator in response.lower() for indicator in negative_indicators):
+        # If the response is not satisfactory, use Gemini AI for a more general answer
+            prompt = (
+                    f"You are a James Cook University Koalion. Answer the following question based on general knowledge: '{query}'. "
+                    "If you cannot find specific information, provide a helpful response."
+                )
+            response = llm.invoke(prompt)
+    else:
+        response = llm.invoke(prompt)
+
     return jsonify({"response": response})
 
 
