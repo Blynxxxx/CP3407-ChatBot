@@ -115,7 +115,7 @@ def chat():
             """
                     )
                 
-    llm = GoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)  # Adjust temperature
+    llm = GoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2, google_api_key=gemini_api_key)  # Adjust temperature
     chain = load_qa_chain(llm=llm, chain_type="stuff")
 
     if docs:
