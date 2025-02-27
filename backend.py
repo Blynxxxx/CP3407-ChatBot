@@ -17,7 +17,7 @@ print("Gemini API Key:", gemini_api_key)
 app = Flask(__name__)
 
 # Setting the PDF file path
-PDF_PATH = 'data/TR1S-Full-Time-Orientation-Schedule.pdf'
+PDF_PATH = 'uploaded_pdfs/TR1S-Full-Time-Orientation-Schedule.pdf'
 STORE_PATH = "vector_stores/orientation"
 
 # Set the storage path
