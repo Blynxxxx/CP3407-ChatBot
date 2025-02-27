@@ -134,15 +134,15 @@ def main():
                     ]
 
 
-                if not response or any(indicator in response.lower() for indicator in negative_indicators):
-                    # If the response is not satisfactory, use Gemini AI for a more general answer
-                    prompt = (
-                                f"You are a James Cook University Koalion. Answer the following question based on general knowledge: '{query}'. "
-                                "If you cannot find specific information, provide a helpful response."
-                            )
-                    response = llm.invoke(prompt)
-                else:
-                    response = llm.invoke(prompt)
+                    if not response or any(indicator in response.lower() for indicator in negative_indicators):
+                        # If the response is not satisfactory, use Gemini AI for a more general answer
+                        prompt = (
+                                    f"You are a James Cook University Koalion. Answer the following question based on general knowledge: '{query}'. "
+                                    "If you cannot find specific information, provide a helpful response."
+                                )
+                        response = llm.invoke(prompt)
+                    else:
+                        response = llm.invoke(prompt)
 
                 # Display response with background
                 st.markdown(f'<div style="background-color:#f4f4f4;padding:10px;border-radius:10px;">{response}</div>', unsafe_allow_html=True)
