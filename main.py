@@ -3,9 +3,9 @@ import requests
 import json
 
 # Streamlit UI
-st.set_page_config(page_title="Chatbot", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="Orientation Chatbot", page_icon="JCU.png", layout="wide")
 
-st.title("📚 Orientation Chatbot")
+st.markdown("<h1 style='text-align: center;'>JCU Orientation Chatbot 🎈</h1>", unsafe_allow_html=True)
 
 # # Load custom CSS
 # with open('style.css') as f:
@@ -42,7 +42,6 @@ with st.sidebar:
     
     # Language Selection
     st.markdown('<div class="language-section">', unsafe_allow_html=True)
-    st.title(get_text("title"))
     languages = ["English", "中文", "မြန်မာ", "Tiếng Việt", "ไทย", "한국어", "日本語"]
     selected_language = st.selectbox(
         "Language Choice:",
@@ -53,24 +52,38 @@ with st.sidebar:
     if st.session_state.language != selected_language:
         st.session_state.language = selected_language
         st.rerun()
+
+    if st.button("➕ New chat", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()    
     
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Chat History
     st.markdown('<div class="history-section">', unsafe_allow_html=True)
-    st.markdown(f"### {get_text('chat_history')}")
+    st.markdown('💬 **CHAT HISTORY**')
     st.markdown('</div>', unsafe_allow_html=True)
+    
+    chat_history_items = [
+        "Additional chat history item 1...",
+        "Additional chat history item 2...",
+        "Additional chat history item 3...",
+        "Additional chat history item 4...",
+        "Additional chat history item 5...",
+        "Additional chat history item 6...",
+        "Additional chat history item 7...",
+        "Additional chat history item 8...",
+        "Additional chat history item 9..."
+    ]
+
+    for item in chat_history_items:
+        st.sidebar.markdown(f"- {item}")
     
     # Bottom Controls
     st.markdown('<div class="bottom-controls">', unsafe_allow_html=True)
-    with st.container():
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.button(get_text("feedback"))
-        with col2:
-            st.button(get_text("settings"))
-        with col3:
-            st.button(get_text("help"))
+    st.button("💭 Feedback", use_container_width=True)
+    st.button("⚙️ Settings", use_container_width=True)
+    st.button("❓ Help", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
