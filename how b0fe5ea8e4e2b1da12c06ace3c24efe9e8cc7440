@@ -1,0 +1,19 @@
+[33mcommit b0fe5ea8e4e2b1da12c06ace3c24efe9e8cc7440[m[33m ([m[1;36mHEAD[m[33m)[m
+Author: Yunqiu Zhu <Paracosm029@gmail.com>
+Date:   Thu Feb 27 12:46:42 2025 +0800
+
+    Update backend.py
+
+[1mdiff --git a/backend.py b/backend.py[m
+[1mindex d4d1dd1e..427d0eeb 100644[m
+[1m--- a/backend.py[m
+[1m+++ b/backend.py[m
+[36m@@ -17,7 +17,7 @@[m [mprint("Gemini API Key:", gemini_api_key)[m
+ app = Flask(__name__)[m
+ [m
+ # Setting the PDF file path[m
+[31m-PDF_PATH = 'data/TR1S-Full-Time-Orientation-Schedule.pdf'[m
+[32m+[m[32mPDF_PATH = 'uploaded_pdfs/TR1S-Full-Time-Orientation-Schedule.pdf'[m[41m[m
+ STORE_PATH = "vector_stores/orientation"[m
+ [m
+ # Set the storage path[m
