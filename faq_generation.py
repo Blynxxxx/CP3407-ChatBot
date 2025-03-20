@@ -26,6 +26,13 @@ VECTOR_STORE_FOLDER = "vector_stores"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(VECTOR_STORE_FOLDER, exist_ok=True)
 
+
+# Setting the vector storage path
+store_path = os.path.join(VECTOR_STORE_FOLDER, "orientation")
+
+# Generate Embed
+embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
+
 def extract_text_from_pdf(pdf_path):
    # Extract text from PDF file
     reader = PdfReader(pdf_path)
@@ -120,11 +127,11 @@ def process_files():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = text_splitter.split_text(all_text.strip())
 
-    # Generate Embedding
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
+    # # Generate Embedding
+    # embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
 
     # Store to vector database
-    store_path = os.path.join(VECTOR_STORE_FOLDER, "orientation")
+    # store_path = os.path.join(VECTOR_STORE_FOLDER, "orientation")
     if os.path.exists(store_path):
         vector_store = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
     else:
@@ -137,11 +144,25 @@ def process_files():
 def generate_prompt(query):
 # Generate FAQ-related Prompts
     return f"""
-    You are an AI assistant specializing in answering FAQ questions based on orientation documents.
+    You are an AI assistant that provides structured answers based on orientation documents.
+    When responding, organize the answer into numbered points (1., 2., 3.) or (·) for clarity.
     
     Question: '{query}'
     
     Provide a clear and detailed response based on the orientation documents.
+
+    - Use **numbered points (1., 2., 3.)** for clarity.
+    - Keep answers **concise** but **detailed enough**.
+    - If needed, include **additional helpful explanations**.
+
+    - Format the response as a bulleted list using '•' (bullet points).
+    - Keep the response **concise** but **detailed**.
+    - If possible, keep the same formatting as the input document.
+
+    **Example Answer Format**:
+    • Orientation Time: Monday, 06 January to Friday, 17 January 2025.
+    • Full Time Orientation Schedule Duration: Monday, 06 January to Friday, 17 January 2025.
+    • Part Time Orientation Schedule Duration: Monday, 06 January to Friday, 17 January 2025.
     """
 
 def generate_faq_response(query):
@@ -151,13 +172,6 @@ def generate_faq_response(query):
     stored_answer = mongo.find_answer(query)
     if stored_answer:
         return stored_answer
-
-    # Setting the vector storage path
-    store_path = os.path.join(VECTOR_STORE_FOLDER, "orientation")
-
-    # Generate Embed
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
-
     try:
         vector_store = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
         docs = vector_store.similarity_search(query=query, k=5)

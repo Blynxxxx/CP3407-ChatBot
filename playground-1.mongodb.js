@@ -45,11 +45,28 @@ db.getCollection('files').deleteMany({});
 //     { upsert: true }
 //   );  
     
+
   db.getCollection('files').updateMany(
     { 'filename': 'Orientation Info.docx' },
     { $set: { 'file_type': 'docx', 'uploaded_at': new Date() } },
     { upsert: true }
   );
+
+  db.getCollection('files').updateMany(
+  {'filename': 'index_faiss'},
+   {"$set": {
+    "file_type": "faiss",'uploaded_at': new Date()
+    }},
+  { upsert: true}
+  );
+
+  db.getCollection('files').updateMany(
+    {'filename': 'index_pkl'},
+     {"$set": {
+      "file_type": "pkl",'uploaded_at': new Date()
+      }},
+    { upsert: true}
+    );
 
 // Query the files stored in the database
 const fileCount = db.getCollection('files').countDocuments();

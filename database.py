@@ -2,6 +2,8 @@ from pymongo import MongoClient
 import gridfs
 import os
 from dotenv import load_dotenv
+import base64
+import datetime
 
 load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
@@ -16,6 +18,7 @@ class MongoDB:
         self.db = self.client[DB_NAME]
         self.faq_collection = self.db["faq"]
         self.fs = gridfs.GridFS(self.db)
+        self.vector_store = self.db["vector_store"]
 
     def insert_document(self, question, answer, source_file=None):
         document = {"question": question, "answer": answer}
@@ -51,3 +54,10 @@ class MongoDB:
 
     def close_connection(self):
         self.client.close()
+
+    def upload_faiss_index(self, faiss_path="vector_stores/orientation/index.faiss", 
+                            pkl_path="vector_stores/orientation/index.pkl"):
+
+       return
+
+   
