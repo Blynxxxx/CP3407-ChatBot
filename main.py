@@ -45,19 +45,21 @@ with st.sidebar:
     st.markdown('<div class="sidebar-content">', unsafe_allow_html=True)
     
     # Language Selection
-    st.markdown('<div class="language-section">', unsafe_allow_html=True)
-    languages = ["English", "中文", "မြန်မာ", "Tiếng Việt", "ไทย", "한국어", "日本語"]
+    # st.markdown(f"<b>{get_text('language')}</b>", unsafe_allow_html=True)
+    # st.markdown('<div class="language-section">', unsafe_allow_html=True)
+    # languages = ["English", "中文", "မြန်မာ", "Tiếng Việt", "ไทย", "한국어", "日本語"]
+    languages = list(translations.keys())
     selected_language = st.selectbox(
-        "Language Choice:",
+        get_text("language"),
         options=languages,
-        index=languages.index("English")
+        index=languages.index(st.session_state.language)
     )
     
     if st.session_state.language != selected_language:
         st.session_state.language = selected_language
         st.rerun()
 
-    if st.button("➕ New chat", use_container_width=True):
+    if st.button(f"➕ {get_text('new_chat')}", use_container_width=True):
         # Empty chat records after clicking
         st.session_state.messages = []
         st.rerun()    
@@ -66,20 +68,26 @@ with st.sidebar:
     
     # Chat History
     st.markdown('<div class="history-section">', unsafe_allow_html=True)
-    st.markdown('💬 **CHAT HISTORY**')
+    # st.markdown('💬 **CHAT HISTORY**')
+    st.markdown(f"💬 **{get_text('chat_history')}**")
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Bottom Controls
     st.markdown('<div class="bottom-controls">', unsafe_allow_html=True)
-    st.button("💭 Feedback", use_container_width=True)
-    st.button("⚙️ Settings", use_container_width=True)
-    st.button("❓ Help", use_container_width=True)
+    # st.button("💭 Feedback", use_container_width=True)
+    # st.button("⚙️ Settings", use_container_width=True)
+    # st.button("❓ Help", use_container_width=True)
+    st.button(f"💭 {get_text('feedback')}", use_container_width=True)
+    st.button(f"⚙️ {get_text('settings')}", use_container_width=True)
+    st.button(f"❓ {get_text('help')}", use_container_width=True)
+
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
 for message in st.session_state.messages:
-    role = " user " if message["role"] == "bot" else " user"
+    role = get_text("user") if message["role"] == "user" else get_text("assistant")
+    # role = " user " if message["role"] == "user" else "assistant"
     with st.chat_message(role):
         st.markdown(message["content"])
 
@@ -106,6 +114,6 @@ if user_input := st.chat_input(get_text("chat_placeholder")):
     except requests.exceptions.JSONDecodeError:
         chatbot_response = f"{get_text('error')} Received non-JSON response"
 
-    st.session_state.messages.append({"role": "bot", "content": chatbot_response})
-    with st.chat_message(get_text("bot")):
+    st.session_state.messages.append({"role": "assistant", "content": chatbot_response})
+    with st.chat_message(get_text("assistant")):
         st.markdown(chatbot_response)
