@@ -17,7 +17,7 @@ print("Gemini API Key:", gemini_api_key)
 app = Flask(__name__)
 
 # Setting the PDF file path
-PDF_PATH = 'uploaded_pdfs/TR1S-Full-Time-Orientation-Schedule.pdf'
+PDF_PATH = 'uploaded_pdfs/Orientation-Info.pdf'
 STORE_PATH = "vector_stores/orientation"
 
 # Set the storage path
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
 
 # # test upload PDF
-# curl -X POST -F "file=@data/TR1S-Full-Time-Orientation-Schedule.pdf" http://127.0.0.1:5001/upload
+# curl -X POST -F "file=@data/Orientation-Info.pdf" http://127.0.0.1:5001/upload
 
 
 # # chat (Q&A API)
@@ -182,7 +182,7 @@ if __name__ == "__main__":
 # # Adaptable to multiple users asking questions at the same time
 # curl -X POST http://127.0.0.1:5001/chat \
 #     -H "Content-Type: application/json" \
-#     -d '{"message": "What documents do I need?", "pdf_name": "TR1S-Full-Time-Orientation-Schedule.pdf"}'
+#     -d '{"message": "What documents do I need?", "pdf_name": "Orientation-Info"}'
 
 # # /list_pdfs (view uploaded PDFs)
 # # List all processed PDFs
@@ -195,4 +195,4 @@ if __name__ == "__main__":
 # # Manage old data
 # curl -X POST http://127.0.0.1:5001/delete_pdf \
 #     -H "Content-Type: application/json" \
-#     -d '{"pdf_name": "TR1S-Full-Time-Orientation-Schedule.pdf"}'
+#     -d '{"pdf_name": "Orientation-Info.pdf"}'

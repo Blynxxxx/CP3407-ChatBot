@@ -43,7 +43,7 @@ def main():
     st.title("📚 Orientation Chatbot")
     
     # Upload a PDF file
-    pdf_path = 'data/TR1S-Full-Time-Orientation-Schedule.pdf'  # Update file path if needed
+    pdf_path = 'data/Orientation-Info'  # Update file path if needed
 
     if os.path.exists(pdf_path):
         text = extract_text_from_pdf(pdf_path)
