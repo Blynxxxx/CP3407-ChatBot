@@ -23,6 +23,36 @@ def load_translations():
     except Exception as e:
         st.error(f"Error loading translations: {str(e)}")
         return {}
+    
+# Function to handle message sending to the backend
+def send_message_to_backend(message):
+    try:
+        response = requests.post(
+            "http://127.0.0.1:5000/chat",
+            json={
+                "message": message,
+                "language": st.session_state.language
+            }
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("response", get_text("no_results"))
+    except requests.exceptions.RequestException as e:
+        return f"{get_text('error')} {str(e)}"
+    except requests.exceptions.JSONDecodeError:
+        return f"{get_text('error')} Received non-JSON response"
+
+# Function to display messages
+def display_message(role, content):
+    with st.chat_message(role):
+        st.markdown(content)
+
+# Function to handle user and quick question inputs
+def handle_input(input_content):
+    st.session_state.messages.append({"role": "user", "content": input_content})
+    chatbot_response = send_message_to_backend(input_content)
+    st.session_state.messages.append({"role": "assistant", "content": chatbot_response})
+    st.rerun()
 
 # Initialize session state
 if "language" not in st.session_state:
@@ -39,6 +69,29 @@ def get_text(key):
     if lang not in translations or key not in translations[lang]:
         lang = "English"
     return translations[lang].get(key, f"Missing translation: {key}")
+
+# Function to handle message sending to the backend
+def send_message_to_backend(message):
+    try:
+        response = requests.post(
+            "http://127.0.0.1:5000/chat",
+            json={
+                "message": message,
+                "language": st.session_state.language
+            }
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("response", get_text("no_results"))
+    except requests.exceptions.RequestException as e:
+        return f"{get_text('error')} {str(e)}"
+    except requests.exceptions.JSONDecodeError:
+        return f"{get_text('error')} Received non-JSON response"
+
+# Function to display messages
+def display_message(role, content):
+    with st.chat_message(role):
+        st.markdown(content)
 
 # Sidebar Information
 with st.sidebar:
@@ -85,35 +138,56 @@ with st.sidebar:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
+# Display conversation history
 for message in st.session_state.messages:
     role = get_text("user") if message["role"] == "user" else get_text("assistant")
-    # role = " user " if message["role"] == "user" else "assistant"
-    with st.chat_message(role):
-        st.markdown(message["content"])
+    display_message(role, message["content"])
+
+# Quick Questions Section - Positioned above User Input
+st.markdown("### Quick Questions")
+questions = ["Orientation Time?", "What to bring?", "Location of the event?", "Contact information?"]
+col1, col2, col3, col4 = st.columns(4)
+
+# Create buttons for each question
+for i, question in enumerate(questions):
+    with eval(f'col{i % 4 + 1}'):
+        if st.button(question):
+            handle_input(question)  # Handle quick question input
 
 # User input
 if user_input := st.chat_input(get_text("chat_placeholder")):
-    st.session_state.messages.append({"role": "user", "content": user_input})
+    handle_input(user_input)  # Handle user input
+
+# for message in st.session_state.messages:
+#     role = get_text("user") if message["role"] == "user" else get_text("assistant")
+#     # role = " user " if message["role"] == "user" else "assistant"
+#     with st.chat_message(role):
+#         st.markdown(message["content"])
+
+# # User input
+# if user_input := st.chat_input(get_text("chat_placeholder")):
     
-    with st.chat_message(get_text("2user")):
-        st.markdown(user_input)
+#     st.session_state.messages.append({"role": "user", "content": user_input})
+    
+#     with st.chat_message(get_text("2user")):
+#         st.markdown(user_input)
 
-    try:
-        response = requests.post(
-            "http://127.0.0.1:5000/chat",
-            json={
-                "message": user_input,
-                "language": st.session_state.language
-            }
-        )
-        response.raise_for_status()
-        data = response.json()
-        chatbot_response = data.get("response", get_text("no_results"))
-    except requests.exceptions.RequestException as e:
-        chatbot_response = f"{get_text('error')} {str(e)}"
-    except requests.exceptions.JSONDecodeError:
-        chatbot_response = f"{get_text('error')} Received non-JSON response"
+#     try:
+#         response = requests.post(
+#             "http://127.0.0.1:5000/chat",
+#             json={
+#                 "message": user_input,
+#                 "language": st.session_state.language
+#             }
+#         )
+#         response.raise_for_status()
+#         data = response.json()
+#         chatbot_response = data.get("response", get_text("no_results"))
+#     except requests.exceptions.RequestException as e:
+#         chatbot_response = f"{get_text('error')} {str(e)}"
+#     except requests.exceptions.JSONDecodeError:
+#         chatbot_response = f"{get_text('error')} Received non-JSON response"
 
-    st.session_state.messages.append({"role": "assistant", "content": chatbot_response})
-    with st.chat_message(get_text("assistant")):
-        st.markdown(chatbot_response)
+#     st.session_state.messages.append({"role": "assistant", "content": chatbot_response})
+#     with st.chat_message(get_text("assistant")):
+#         st.markdown(chatbot_response)
