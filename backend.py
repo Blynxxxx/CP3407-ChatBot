@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, request, jsonify, send_file
 import os
 from dotenv import load_dotenv
@@ -140,6 +141,31 @@ def chat():
     #     response = llm.invoke(prompt)
 
     # return jsonify({"response": response})
+
+@app.route("/submit_feedback", methods=["POST"])
+def submit_feedback():
+    try:
+        data = request.json
+        if not data:
+            print("❌ Error: Received empty JSON request")
+            return jsonify({"status": "error", "message": "Empty request body"}), 400
+
+        feedback_text = data.get("feedback", "").strip()
+        if not feedback_text:
+            print("❌ Error: Feedback is empty")
+            return jsonify({"status": "error", "message": "Feedback is empty"}), 400
+
+        # Insert to MongoDB
+        feedback_doc = {
+            "feedback": feedback_text,
+            "timestamp": datetime.utcnow()
+        }
+        db.insert_document("user_feedback", feedback_doc)
+
+        return jsonify({"status": "success", "message": "Feedback saved!"}), 200
+    except Exception as e:
+        print(f"❌ Error in submit_feedback: {e}")
+        return jsonify({"status": "error", "message": f"Internal Server Error: {e}"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

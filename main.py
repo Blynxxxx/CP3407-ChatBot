@@ -1,8 +1,10 @@
+from charset_normalizer import detect
 import streamlit as st
 import requests
 import json
 import os
 from dotenv import load_dotenv
+from deep_translator import GoogleTranslator
 
 load_dotenv()
 
@@ -11,11 +13,7 @@ st.set_page_config(page_title="Orientation Chatbot", page_icon="JCU.png", layout
 
 st.markdown("<h1 style='text-align: center;'>JCU Orientation Chatbot 🎈</h1>", unsafe_allow_html=True)
 
-# # Load custom CSS
-# with open('style.css') as f:
-#     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-
-# Load translations from languages.json
+# # Load translations from languages.json
 def load_translations():
     try:
         with open('languages.json', 'r', encoding='utf-8') as file:
@@ -101,6 +99,7 @@ with st.sidebar:
     # st.markdown(f"<b>{get_text('language')}</b>", unsafe_allow_html=True)
     # st.markdown('<div class="language-section">', unsafe_allow_html=True)
     # languages = ["English", "中文", "မြန်မာ", "Tiếng Việt", "ไทย", "한국어", "日本語"]
+
     languages = list(translations.keys())
     selected_language = st.selectbox(
         get_text("language"),
@@ -119,24 +118,71 @@ with st.sidebar:
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Chat History
-    st.markdown('<div class="history-section">', unsafe_allow_html=True)
-    # st.markdown('💬 **CHAT HISTORY**')
-    st.markdown(f"💬 **{get_text('chat_history')}**")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
     # Bottom Controls
     st.markdown('<div class="bottom-controls">', unsafe_allow_html=True)
     # st.button("💭 Feedback", use_container_width=True)
     # st.button("⚙️ Settings", use_container_width=True)
     # st.button("❓ Help", use_container_width=True)
-    st.button(f"💭 {get_text('feedback')}", use_container_width=True)
-    st.button(f"⚙️ {get_text('settings')}", use_container_width=True)
-    st.button(f"❓ {get_text('help')}", use_container_width=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Feedback button
+    if st.button(f"💭 {get_text('feedback')}", use_container_width=True):
+        # st.session_state.show_feedback = True
+        st.session_state.show_feedback = not st.session_state.get("show_feedback", False)
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Setting button
+    # if st.button(f"⚙️ {get_text('settings')}", use_container_width=True):
+    #     # st.session_state.show_settings = True
+    #     st.session_state.show_settings = not st.session_state.get("show_settings", False)
+
+    # Help button
+    if st.button(f"❓ {get_text('help')}",  use_container_width=True):
+        st.session_state.show_help = not st.session_state.get("show_help", False)
+
+    # ** Show Help content**   
+    if st.session_state.get("show_help", False):
+        st.markdown('<div class="help-section">', unsafe_allow_html=True)
+        st.markdown("""
+        **📧 Contact Support:**  
+        - Email: [support@example.com](mailto:support@example.com)  
+        - FAQ: [Visit FAQ Page](#)
+        """, unsafe_allow_html=True)
+        if st.button("❌ Close Help", key="close_help", use_container_width=True):
+            st.session_state.show_help = False
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # ** Show Feedback content**
+    if st.session_state.get("show_feedback", False):
+        st.markdown('<div class="feedback-section">', unsafe_allow_html=True)
+        st.markdown("### 💬 Feedback")
+
+        feedback_text = st.text_area("Enter your feedback here...")
+
+        # **Disable button logic**
+        submit_button = st.button("Submit Feedback", disabled=not bool(feedback_text.strip()))
+        
+        if submit_button:
+            response = requests.post(
+                "http://127.0.0.1:5000/submit_feedback",
+                json={"feedback": feedback_text.strip()}
+            )
+            
+            if response.status_code == 200:
+                try:
+                    res_json = response.json()
+                    st.success(f"✅ {res_json.get('message', 'Feedback submitted successfully!')}")
+                except requests.exceptions.JSONDecodeError:
+                    st.error("❌ Feedback submitted, but received an invalid response.")
+            else:
+                try:
+                    res_json = response.json()
+                    st.error(f"❌ Failed to submit feedback: {res_json.get('message', 'Unknown error')}")
+                except requests.exceptions.JSONDecodeError:
+                    st.error("❌ Failed to submit feedback: Unknown error from server.")
+        
+        if st.button("❌ Close Feedback", key="close_feedback", use_container_width=True):
+            st.session_state.show_feedback = False
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # Display conversation history
 for message in st.session_state.messages:

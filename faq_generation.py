@@ -132,13 +132,27 @@ def process_files():
 
     # Store to vector database
     # store_path = os.path.join(VECTOR_STORE_FOLDER, "orientation")
+
+    # Load or create a FAISS vector database
     if os.path.exists(store_path):
-        vector_store = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
+        vector_store = get_faiss_store()
+        print("🔄 Existing FAISS vector store loaded. Updating with new data...")
+        vector_store.add_texts(chunks)  # **Automatic addition of new data**
     else:
         vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-        vector_store.save_local(store_path)
+        print("🆕 Creating a new FAISS vector store.")
 
-    print("✅ All files processed and stored in FAISS!")
+    # Keep an up-to-date FAISS database
+    vector_store.save_local(store_path)
+    print("✅ FAISS vector store updated successfully!")
+
+    # if os.path.exists(store_path):
+    #     vector_store = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
+    # else:
+    #     vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+    #     vector_store.save_local(store_path)
+
+    # print("✅ All files processed and stored in FAISS!")
 
 
 def generate_prompt(query):
@@ -159,13 +173,20 @@ def generate_prompt(query):
     - Keep the response **concise** but **detailed**.
     - If possible, keep the same formatting as the input document.
 
-    **Example Answer Format**:
-    • Orientation Time: Monday, 06 January to Friday, 17 January 2025.
-    • Full Time Orientation Schedule Duration: Monday, 06 January to Friday, 17 January 2025.
-    • Part Time Orientation Schedule Duration: Monday, 06 January to Friday, 17 January 2025.
+    No code, just a direct answer to each question
     """
 
+faiss_cache = None  # Defining the Global Cache
+
+def get_faiss_store(): # Use global cache to avoid double loading FAISS
+    global faiss_cache
+    if faiss_cache is None:  # Load only on first enquiry
+        faiss_cache = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
+    return faiss_cache
+
 def generate_faq_response(query):
+
+    # First query the database to see if there is an answer already stored.
     mongo = MongoDB()
 
     # Query Database
@@ -173,7 +194,7 @@ def generate_faq_response(query):
     if stored_answer:
         return stored_answer
     try:
-        vector_store = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
+        vector_store = get_faiss_store()
         docs = vector_store.similarity_search(query=query, k=5)
     except Exception as e:
         print(f"❌ Error loading FAISS vector store: {e}")
@@ -185,6 +206,7 @@ def generate_faq_response(query):
     # Initialising the LLM
     llm = GoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)
     chain = load_qa_chain(llm=llm, chain_type="stuff")
+
 
     if docs:
         response = chain.run(input_documents=docs, question=prompt)
@@ -214,7 +236,7 @@ def generate_faq_response(query):
 
         # if response:
         #     mongo.store_answer(query, response)
-
+    
     return response
 
 if __name__ == "__main__":

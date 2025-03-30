@@ -17,21 +17,27 @@ class MongoDB:
         self.client = MongoClient(MONGO_URI)
         self.db = self.client[DB_NAME]
         self.faq_collection = self.db["faq"]
+        self.feedback_collection = self.db["user_feedback"]
         self.fs = gridfs.GridFS(self.db)
         self.vector_store = self.db["vector_store"]
 
-    def insert_document(self, question, answer, source_file=None):
-        document = {"question": question, "answer": answer}
-        if source_file:
-            document["source_file"] = source_file
-        self.faq_collection.insert_one(document)
+    def insert_document(self, collection_name, document, question=None, answer=None, source_file=None):
+        if question and answer:
+            document["question"] = question
+            document["answer"] = answer
+        self.db[collection_name].insert_one(document)
+
 
     def find_answer(self, query):
         if not query.strip():
             return None 
         try:
-            result = self.faq_collection.find_one({"question": {"$regex": query, "$options": "i"}})
-            return result.get("answer", "No answer found.") if result else None
+           result = self.faq_collection.find_one(
+               {"$text": {"$search": query}},  # Using Full-Text Indexing
+               {"score": {"$meta": "textScore"}}  # Getting the score of a text match
+            )
+           return result.get("answer", "No answer found.") if result else None
+        
         except Exception as e:
             print(f"Database error: {e}")
             return None
