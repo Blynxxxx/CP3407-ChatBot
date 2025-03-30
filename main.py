@@ -4,7 +4,6 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
-from deep_translator import GoogleTranslator
 
 load_dotenv()
 

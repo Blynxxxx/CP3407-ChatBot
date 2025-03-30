@@ -102,7 +102,14 @@ def process_files():
     
     for file in uploaded_files:
         file_id = file["_id"]
+
+        if "filename" not in file:
+            print(f"❌ Error: Missing 'filename' in file document: {file}")
+            continue  # Skip this file to avoid KeyError!
+        
         filename = file["filename"]
+        print(f"✅ Processing file: {filename}")
+
         local_path = os.path.join(UPLOAD_FOLDER, filename)
 
         # Download file
