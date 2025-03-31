@@ -165,23 +165,27 @@ def process_files():
 def generate_prompt(query):
 # Generate FAQ-related Prompts
     return f"""
-    You are an AI assistant that provides structured answers based on orientation documents.
-    When responding, organize the answer into numbered points (1., 2., 3.) or (·) for clarity.
-    
-    Question: '{query}'
-    
-    Provide a clear and detailed response based on the orientation documents.
+You are an Orientation Assistant at James Cook University Singapore.
+Your goal is to provide structured and clear answers based on orientation documents.
+When responding, organize the answer using:
 
-    - Use **numbered points (1., 2., 3.)** for clarity.
-    - Keep answers **concise** but **detailed enough**.
-    - If needed, include **additional helpful explanations**.
+Numbered points (1., 2., 3.) for multiple details.
 
-    - Format the response as a bulleted list using '•' (bullet points).
-    - Keep the response **concise** but **detailed**.
-    - If possible, keep the same formatting as the input document.
+Bullet points (•) for general explanations.
 
-    No code, just a direct answer to each question
-    """
+Ensure responses are:
+Concise but detailed.
+Friendly and supportive.
+Formatted consistently to match orientation documents.
+
+You should reply in a friendly and supportive tone.
+ Based on the given information answer the question: '{query}' in detail.
+ Example 1: Question: Where is the Explore Booth?; Response: The Explore Booth is in Block E
+ Example 2: Question: What is the venue of Network with Lecturers and Peers?; Response: The Network with Lecturers and Peers is in Multi-Purpose Hall
+ Example 3: How many blocks/buildings in JCU Singapore?; Response: There are 5 blocks in JCU Singapore. Block A, B, C, D, and E.
+
+Now, answer the following question: {query}.
+ """
 
 faiss_cache = None  # Defining the Global Cache
 
@@ -191,7 +195,7 @@ def get_faiss_store(): # Use global cache to avoid double loading FAISS
         faiss_cache = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
     return faiss_cache
 
-def generate_faq_response(query):
+def generate_faq_response(query, chat_history=None):
 
     # First query the database to see if there is an answer already stored.
     mongo = MongoDB()
@@ -206,6 +210,9 @@ def generate_faq_response(query):
     except Exception as e:
         print(f"❌ Error loading FAISS vector store: {e}")
         docs = []
+
+        history_context = "\n".join(
+            [f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history]) if chat_history else ""
 
     # Generate Prompt
     prompt = generate_prompt(query)

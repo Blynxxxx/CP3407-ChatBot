@@ -1,9 +1,11 @@
-from charset_normalizer import detect
 import streamlit as st
 import requests
 import json
 import os
 from dotenv import load_dotenv
+from langdetect import detect
+from googletrans import Translator
+import asyncio
 
 load_dotenv()
 
@@ -12,7 +14,8 @@ st.set_page_config(page_title="Orientation Chatbot", page_icon="JCU.png", layout
 
 st.markdown("<h1 style='text-align: center;'>JCU Orientation Chatbot 🎈</h1>", unsafe_allow_html=True)
 
-# # Load translations from languages.json
+#############################################################################################
+# Load translations from languages.json
 def load_translations():
     try:
         with open('languages.json', 'r', encoding='utf-8') as file:
@@ -21,33 +24,81 @@ def load_translations():
         st.error(f"Error loading translations: {str(e)}")
         return {}
     
+translations = load_translations()
+
+def get_text(key):
+    lang = st.session_state.language
+    if lang not in translations or key not in translations[lang]:
+        lang = "English"
+    return translations[lang].get(key,"Type your message...")
+
+def translate_text(text, source_language, target_language):
+    translator = Translator()
+    
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    translated = loop.run_until_complete(translator.translate(text, src=source_language, dest=target_language))
+    
+    return translated.text
+
+#########################################################################
+
 # Function to handle message sending to the backend
-def send_message_to_backend(message):
+def send_message_to_backend(message, user_language, chat_history=None):
     try:
-        response = requests.post(
-            "http://127.0.0.1:5000/chat",
-            json={
-                "message": message,
-                "language": st.session_state.language
-            }
-        )
+        # If not in English, translate into English first
+        if user_language != "en":
+            translated_message = translate_text(message, user_language, "en")
+        else:
+            translated_message = message
+
+        payload = {
+            "message": translated_message,
+            "language": "English"
+        }
+
+        if chat_history:
+            payload["chat_history"] = chat_history
+        
+        response = requests.post("http://127.0.0.1:5000/chat", json=payload)
+
         response.raise_for_status()
         data = response.json()
-        return data.get("response", get_text("no_results"))
     except requests.exceptions.RequestException as e:
-        return f"{get_text('error')} {str(e)}"
+        return f"❌ Server Error: {str(e)}"
     except requests.exceptions.JSONDecodeError:
-        return f"{get_text('error')} Received non-JSON response"
+        return "❌ Server Error: Invalid response format"
+    
+    english_response = data.get("response", "⚠️ AI could not provide a suitable answer")
+    
+    return translate_text(english_response, "en", user_language) if user_language != "en" else english_response
 
-# Function to display messages
 def display_message(role, content):
     with st.chat_message(role):
         st.markdown(content)
 
-# Function to handle user and quick question inputs
+# User Input Processing
 def handle_input(input_content):
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Logging User Messages
     st.session_state.messages.append({"role": "user", "content": input_content})
-    chatbot_response = send_message_to_backend(input_content)
+
+    # Detecting user language
+    detected_language = detect(input_content) if input_content else "en"
+    if detected_language not in ["zh-cn", "en", "ja", "ko", "th", "my", "vi"]:
+        detected_language = "en"
+
+    # Get the last 10 chats and prevent errors when they are empty.
+    chat_history = st.session_state.messages[-10:] if st.session_state.messages else []
+
+    # Use`send_message_to_backend()`，deliver `detected_language`。
+    chatbot_response = send_message_to_backend(input_content, detected_language, chat_history)
+
+    # Record AI Answer
     st.session_state.messages.append({"role": "assistant", "content": chatbot_response})
     st.rerun()
 
@@ -57,38 +108,26 @@ if "language" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Load translations
-translations = load_translations()
+# Display conversation history
+for message in st.session_state.messages:
+    role = get_text("user") if message["role"] == "user" else get_text("assistant")
+    display_message(role, message["content"])
 
-# Get current language text
-def get_text(key):
-    lang = st.session_state.language
-    if lang not in translations or key not in translations[lang]:
-        lang = "English"
-    return translations[lang].get(key, f"Missing translation: {key}")
+# Quick Questions Section - Positioned above User Input
+st.markdown("### Quick Questions")
+questions = ["Orientation Time?", "What to bring?", "Location of the event?", "Contact information?"]
+col1, col2, col3, col4 = st.columns(4)
 
-# Function to handle message sending to the backend
-def send_message_to_backend(message):
-    try:
-        response = requests.post(
-            "http://127.0.0.1:5000/chat",
-            json={
-                "message": message,
-                "language": st.session_state.language
-            }
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("response", get_text("no_results"))
-    except requests.exceptions.RequestException as e:
-        return f"{get_text('error')} {str(e)}"
-    except requests.exceptions.JSONDecodeError:
-        return f"{get_text('error')} Received non-JSON response"
+# Create buttons for each question
+for i, question in enumerate(questions):
+    with eval(f'col{i % 4 + 1}'):
+        if st.button(question):
+            handle_input(question)  # Handle quick question input
+# User input
+if user_input := st.chat_input(get_text("chat_placeholder")):
+    handle_input(user_input)  # Handle user input
 
-# Function to display messages
-def display_message(role, content):
-    with st.chat_message(role):
-        st.markdown(content)
+##########################################################################################
 
 # Sidebar Information
 with st.sidebar:
@@ -182,57 +221,3 @@ with st.sidebar:
             st.session_state.show_feedback = False
 
         st.markdown('</div>', unsafe_allow_html=True)
-
-# Display conversation history
-for message in st.session_state.messages:
-    role = get_text("user") if message["role"] == "user" else get_text("assistant")
-    display_message(role, message["content"])
-
-# Quick Questions Section - Positioned above User Input
-st.markdown("### Quick Questions")
-questions = ["Orientation Time?", "What to bring?", "Location of the event?", "Contact information?"]
-col1, col2, col3, col4 = st.columns(4)
-
-# Create buttons for each question
-for i, question in enumerate(questions):
-    with eval(f'col{i % 4 + 1}'):
-        if st.button(question):
-            handle_input(question)  # Handle quick question input
-
-# User input
-if user_input := st.chat_input(get_text("chat_placeholder")):
-    handle_input(user_input)  # Handle user input
-
-# for message in st.session_state.messages:
-#     role = get_text("user") if message["role"] == "user" else get_text("assistant")
-#     # role = " user " if message["role"] == "user" else "assistant"
-#     with st.chat_message(role):
-#         st.markdown(message["content"])
-
-# # User input
-# if user_input := st.chat_input(get_text("chat_placeholder")):
-    
-#     st.session_state.messages.append({"role": "user", "content": user_input})
-    
-#     with st.chat_message(get_text("2user")):
-#         st.markdown(user_input)
-
-#     try:
-#         response = requests.post(
-#             "http://127.0.0.1:5000/chat",
-#             json={
-#                 "message": user_input,
-#                 "language": st.session_state.language
-#             }
-#         )
-#         response.raise_for_status()
-#         data = response.json()
-#         chatbot_response = data.get("response", get_text("no_results"))
-#     except requests.exceptions.RequestException as e:
-#         chatbot_response = f"{get_text('error')} {str(e)}"
-#     except requests.exceptions.JSONDecodeError:
-#         chatbot_response = f"{get_text('error')} Received non-JSON response"
-
-#     st.session_state.messages.append({"role": "assistant", "content": chatbot_response})
-#     with st.chat_message(get_text("assistant")):
-#         st.markdown(chatbot_response)
