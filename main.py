@@ -1,11 +1,11 @@
 import streamlit as st
 import requests
 import json
-import os
 from dotenv import load_dotenv
 from langdetect import detect
 from googletrans import Translator
 import asyncio
+import re
 
 load_dotenv()
 
@@ -30,17 +30,32 @@ def get_text(key):
     lang = st.session_state.language
     if lang not in translations or key not in translations[lang]:
         lang = "English"
-    return translations[lang].get(key,"Type your message...")
+    return translations[lang].get(key, "Type your message...")
 
 def translate_text(text, source_language, target_language):
+    from googletrans import Translator
+
+    # Reserved word substitution (if required)
+    preserved_terms = {
+        "James Cook": "JAMES_COOK"
+    }
+
+    for term, placeholder in preserved_terms.items():
+        text = text.replace(term, placeholder)
+
     translator = Translator()
-    
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    translated = loop.run_until_complete(translator.translate(text, src=source_language, dest=target_language))
-    
-    return translated.text
+    try:
+        translated = translator.translate(text, src=source_language, dest=target_language)
+        result = translated.text
+    except Exception as e:
+        print(f"[translation error] {e}")
+        result = text  # fallback
+
+    # revert to the original wording
+    for term, placeholder in preserved_terms.items():
+        result = result.replace(placeholder, term)
+
+    return result
 
 #########################################################################
 
@@ -80,22 +95,43 @@ def display_message(role, content):
 
 # User Input Processing
 def handle_input(input_content):
-
     if "messages" not in st.session_state:
         st.session_state.messages = []
+
+    # Check for empty input
+    if not input_content.strip():
+        st.warning("Please enter a valid message.")
+        return
 
     # Logging User Messages
     st.session_state.messages.append({"role": "user", "content": input_content})
 
     # Detecting user language
-    detected_language = detect(input_content) if input_content else "en"
-    if detected_language not in ["zh-cn", "en", "ja", "ko", "th", "my", "vi"]:
+    try:
+        detected_language = detect(input_content) if input_content else "en"
+    except Exception:
+        detected_language = "en"  # Default to English if detection fails
+
+    # Force detected language to match selected language
+    if st.session_state.language == "中文":
+        detected_language = "zh-cn"
+    elif st.session_state.language == "日本語":
+        detected_language = "ja"
+    elif st.session_state.language == "한국어":
+        detected_language = "ko"
+    elif st.session_state.language == "ไทย":
+        detected_language = "th"
+    elif st.session_state.language == "Tiếng Việt":
+        detected_language = "vi"
+    elif st.session_state.language == "မြန်မာ":
+        detected_language = "my"
+    else:  # Default to English if not any of the above
         detected_language = "en"
 
     # Get the last 10 chats and prevent errors when they are empty.
     chat_history = st.session_state.messages[-10:] if st.session_state.messages else []
 
-    # Use`send_message_to_backend()`，deliver `detected_language`。
+    # Use send_message_to_backend(), deliver detected_language.
     chatbot_response = send_message_to_backend(input_content, detected_language, chat_history)
 
     # Record AI Answer
@@ -115,7 +151,7 @@ for message in st.session_state.messages:
 
 # Quick Questions Section - Positioned above User Input
 st.markdown("### Quick Questions")
-questions = ["Orientation Time?", "What to bring?", "Location of the event?", "Contact information?"]
+questions = ["Orientation Schedule?", "Compulsory documents to bring for Student Pass?", "How many type of orientation are there?", "About James Cook University Singapore"]
 col1, col2, col3, col4 = st.columns(4)
 
 # Create buttons for each question
@@ -123,6 +159,7 @@ for i, question in enumerate(questions):
     with eval(f'col{i % 4 + 1}'):
         if st.button(question):
             handle_input(question)  # Handle quick question input
+
 # User input
 if user_input := st.chat_input(get_text("chat_placeholder")):
     handle_input(user_input)  # Handle user input
@@ -133,11 +170,6 @@ if user_input := st.chat_input(get_text("chat_placeholder")):
 with st.sidebar:
     st.markdown('<div class="sidebar-content">', unsafe_allow_html=True)
     
-    # Language Selection
-    # st.markdown(f"<b>{get_text('language')}</b>", unsafe_allow_html=True)
-    # st.markdown('<div class="language-section">', unsafe_allow_html=True)
-    # languages = ["English", "中文", "မြန်မာ", "Tiếng Việt", "ไทย", "한국어", "日本語"]
-
     languages = list(translations.keys())
     selected_language = st.selectbox(
         get_text("language"),
@@ -158,29 +190,20 @@ with st.sidebar:
     
     # Bottom Controls
     st.markdown('<div class="bottom-controls">', unsafe_allow_html=True)
-    # st.button("💭 Feedback", use_container_width=True)
-    # st.button("⚙️ Settings", use_container_width=True)
-    # st.button("❓ Help", use_container_width=True)
 
     # Feedback button
     if st.button(f"💭 {get_text('feedback')}", use_container_width=True):
-        # st.session_state.show_feedback = True
         st.session_state.show_feedback = not st.session_state.get("show_feedback", False)
-    
-    # Setting button
-    # if st.button(f"⚙️ {get_text('settings')}", use_container_width=True):
-    #     # st.session_state.show_settings = True
-    #     st.session_state.show_settings = not st.session_state.get("show_settings", False)
 
     # Help button
     if st.button(f"❓ {get_text('help')}",  use_container_width=True):
         st.session_state.show_help = not st.session_state.get("show_help", False)
 
-    # ** Show Help content**   
+    # * Show Help content*   
     if st.session_state.get("show_help", False):
         st.markdown('<div class="help-section">', unsafe_allow_html=True)
         st.markdown("""
-        **📧 Contact Support:**  
+        *📧 Contact Support:*  
         - Email: [support@example.com](mailto:support@example.com)  
         - FAQ: [Visit FAQ Page](#)
         """, unsafe_allow_html=True)
@@ -188,14 +211,14 @@ with st.sidebar:
             st.session_state.show_help = False
         st.markdown('</div>', unsafe_allow_html=True)
     
-    # ** Show Feedback content**
+    # * Show Feedback content*
     if st.session_state.get("show_feedback", False):
         st.markdown('<div class="feedback-section">', unsafe_allow_html=True)
         st.markdown("### 💬 Feedback")
 
         feedback_text = st.text_area("Enter your feedback here...")
 
-        # **Disable button logic**
+        # *Disable button logic*
         submit_button = st.button("Submit Feedback", disabled=not bool(feedback_text.strip()))
         
         if submit_button:
