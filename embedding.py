@@ -1,18 +1,36 @@
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
+from pymongo import MongoClient
 
 # 1. Deploying API Keys
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# 2. generating vectors
+# 2. Generate Embedding
+text = "This is a chatbot that helps answer questions."
 response = genai.embed_content(
-    model="models/embedding-001",  # Using Google's Embedding Model
-    content="This is a chatbot that helps answer questions.",
+    model="models/embedding-001",
+    content=text,
     task_type="retrieval_document"
 )
 
-# 3. Get Embedding Vector
 embedding = response["embedding"]
-print(embedding)  # Make sure the output is correct
+
+# 3. Store in MongoDB
+mongo_uri = os.getenv("MONGO_URI")
+client = MongoClient(mongo_uri)
+db = client["orientation_db"]
+collection = db["files"]
+
+# Upsert (update or insert)
+collection.update_one(
+    {"_id": "vector_search"},
+    {"$set": {
+        "content": text,
+        "embedding": embedding
+    }},
+    upsert=True
+)
+
+print("✅ Embedding saved to MongoDB successfully.")

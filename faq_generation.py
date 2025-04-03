@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from flask import app, jsonify, request
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_anthropic import ChatAnthropic
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, GoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
@@ -14,6 +15,7 @@ from database import MongoDB
 # Loading Environment Variables
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 
 # Connecting to MongoDB
 client = MongoClient("mongodb+srv://AICHATBOT:2025aichatbot@db.mfbl1.mongodb.net/")
@@ -32,6 +34,9 @@ store_path = os.path.join(VECTOR_STORE_FOLDER, "orientation")
 
 # Generate Embed
 embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
+
+# Initialize Claude model
+llm = ChatAnthropic(model='claude-3-sonnet-20240229', api_key=anthropic_api_key, temperature=0.2, max_tokens=1024)
 
 def extract_text_from_pdf(pdf_path):
    # Extract text from PDF file
@@ -134,12 +139,6 @@ def process_files():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = text_splitter.split_text(all_text.strip())
 
-    # # Generate Embedding
-    # embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=gemini_api_key)
-
-    # Store to vector database
-    # store_path = os.path.join(VECTOR_STORE_FOLDER, "orientation")
-
     # Load or create a FAISS vector database
     if os.path.exists(store_path):
         vector_store = get_faiss_store()
@@ -150,42 +149,37 @@ def process_files():
         print("🆕 Creating a new FAISS vector store.")
 
     # Keep an up-to-date FAISS database
-    vector_store.save_local(store_path)
+    vector_store.save_local(store_path)()
     print("✅ FAISS vector store updated successfully!")
 
-    # if os.path.exists(store_path):
-    #     vector_store = FAISS.load_local(store_path, embeddings, allow_dangerous_deserialization=True)
-    # else:
-    #     vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-    #     vector_store.save_local(store_path)
-
-    # print("✅ All files processed and stored in FAISS!")
-
-
-def generate_prompt(query):
-# Generate FAQ-related Prompts
-    return f"""
-You are an Orientation Assistant at James Cook University Singapore.
-Your goal is to provide structured and clear answers based on orientation documents.
+def generate_prompt(query, language="en"):
+    if language == "zh":
+        return f"""
+您是一名新生的迎新助理。您需要回答关于詹姆斯库克大学新加坡的迎新信息。请用自然语言回答问题，不要使用代码格式（例如 print()）
+您的目标是根据迎新文件提供结构清晰的答案。
+回答时，请使用以下格式：
+要点（•）用于一般说明。
+确保回答：简洁但详细；语气友好；格式一致，以匹配迎新文件。
+寻找名词关键字并注意问题。
+根据文件，详细回答问题：'{query}'。
+示例 1:问题:探索展位在哪里?; 回答: 探索展位在E栋。
+示例 2:问题:与老师和同学的网络活动的地点是什么?; 回答:与老师和同学的网络活动在多功能大厅。
+示例 3:詹姆斯库克大学新加坡有多少个楼栋?; 回答: 詹姆斯库克大学新加坡有5个楼栋。A栋, B栋, C栋, D栋和E栋。
+"""
+    else:  # Default to English
+        return f"""
+You are an Orientation Assistant for new students. You are required to answer orientation information about James Cook University Singapore.
+Your goal is to provide structured and clear answers based on orientation documents.Do **not** use code formatting like `print()` or `console.log()`, just give a helpful answer.
 When responding, organize the answer using:
-
 Numbered points (1., 2., 3.) for multiple details.
-
 Bullet points (•) for general explanations.
-
-Ensure responses are:
-Concise but detailed.
-Friendly and supportive.
-Formatted consistently to match orientation documents.
-
-You should reply in a friendly and supportive tone.
- Based on the given information answer the question: '{query}' in detail.
- Example 1: Question: Where is the Explore Booth?; Response: The Explore Booth is in Block E
- Example 2: Question: What is the venue of Network with Lecturers and Peers?; Response: The Network with Lecturers and Peers is in Multi-Purpose Hall
- Example 3: How many blocks/buildings in JCU Singapore?; Response: There are 5 blocks in JCU Singapore. Block A, B, C, D, and E.
-
-Now, answer the following question: {query}.
- """
+Ensure responses are: Concise but detailed; Friendly and supportive; Formatted consistently to match orientation documents.
+Search for noun key words and pay attention to questions.
+Based on the documents, answer the question: '{query}' in detail.
+Example 1: Question: Where is the Explore Booth?; Response: The Explore Booth is in Block E.
+Example 2: Question: What is the venue of Network with Lecturers and Peers?; Response: The Network with Lecturers and Peers is in Multi-Purpose Hall.
+Example 3: How many blocks/buildings in JCU Singapore?; Response: There are 5 blocks in JCU Singapore: Block A, B, C, D, and E.
+"""
 
 faiss_cache = None  # Defining the Global Cache
 
@@ -233,24 +227,23 @@ def generate_faq_response(query, chat_history=None):
             "unable to answer",
             "not found",
             "does not provide",
-            "don't know"
+            "don't know",
+            "do not contain",
+            "sorry",
+            "do not have",
+            "do not provide"
         ]
 
         if not response or any(indicator in response.lower() for indicator in negative_indicators):
             # Using AI to Generate General Answers
             general_prompt = f"""
-            You are an AI assistant answering student questions.
-            If the document does not contain relevant information, provide a helpful response.
+            You are an JCU(James Cook University) AI assistant answering student questions using internet to provide a helpful response.
             
             Question: '{query}'
             """
             response = llm.invoke(general_prompt)
     else:
         response = llm.invoke(prompt)
-
-        # if response:
-        #     mongo.store_answer(query, response)
-    
     return response
 
 if __name__ == "__main__":

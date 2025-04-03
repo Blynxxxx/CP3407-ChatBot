@@ -6,6 +6,11 @@ import os
 # Get the path to the Python interpreter for the current virtual environment
 python_executable = sys.executable
 
+# Step 0: Run embedding script
+print("Running embedding.py...")
+embedding_process = subprocess.Popen([python_executable, "embedding.py"])
+embedding_process.wait()
+
 # Step 1: Run FAQ generation script
 print("Running faq_generation.py...")
 faq_process = subprocess.Popen([python_executable, "faq_generation.py"])

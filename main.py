@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from langdetect import detect
 from googletrans import Translator
 import asyncio
-import re
 
 load_dotenv()
 
@@ -30,32 +29,30 @@ def get_text(key):
     lang = st.session_state.language
     if lang not in translations or key not in translations[lang]:
         lang = "English"
-    return translations[lang].get(key, "Type your message...")
+    return translations[lang].get(key, "Choose languages...")
 
 def translate_text(text, source_language, target_language):
-    from googletrans import Translator
-
-    # Reserved word substitution (if required)
+    # Preserve specific terms
     preserved_terms = {
         "James Cook": "JAMES_COOK"
     }
-
+    
+    # Replace terms with placeholders
     for term, placeholder in preserved_terms.items():
         text = text.replace(term, placeholder)
 
     translator = Translator()
-    try:
-        translated = translator.translate(text, src=source_language, dest=target_language)
-        result = translated.text
-    except Exception as e:
-        print(f"[translation error] {e}")
-        result = text  # fallback
-
-    # revert to the original wording
+    
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    translated = loop.run_until_complete(translator.translate(text, src=source_language, dest=target_language))
+    
+    # Restore preserved terms
     for term, placeholder in preserved_terms.items():
-        result = result.replace(placeholder, term)
+        translated.text = translated.text.replace(placeholder, term)
 
-    return result
+    return translated.text
 
 #########################################################################
 
@@ -106,25 +103,9 @@ def handle_input(input_content):
     # Logging User Messages
     st.session_state.messages.append({"role": "user", "content": input_content})
 
-    # Detecting user language
-    try:
-        detected_language = detect(input_content) if input_content else "en"
-    except Exception:
-        detected_language = "en"  # Default to English if detection fails
-
-    # Force detected language to match selected language
+    # # Force detected language to match selected language
     if st.session_state.language == "中文":
         detected_language = "zh-cn"
-    elif st.session_state.language == "日本語":
-        detected_language = "ja"
-    elif st.session_state.language == "한국어":
-        detected_language = "ko"
-    elif st.session_state.language == "ไทย":
-        detected_language = "th"
-    elif st.session_state.language == "Tiếng Việt":
-        detected_language = "vi"
-    elif st.session_state.language == "မြန်မာ":
-        detected_language = "my"
     else:  # Default to English if not any of the above
         detected_language = "en"
 
@@ -151,8 +132,15 @@ for message in st.session_state.messages:
 
 # Quick Questions Section - Positioned above User Input
 st.markdown("### Quick Questions")
-questions = ["Orientation Schedule?", "Compulsory documents to bring for Student Pass?", "How many type of orientation are there?", "About James Cook University Singapore"]
-col1, col2, col3, col4 = st.columns(4)
+questions = [
+    "When is the orientation for full time and part time?",
+    "Compulsory documents for Student Pass Formalities?",
+    "What do I need to prepare for orientation?",
+    "About James Cook University Singapore"
+]
+
+# Create columns with equal width
+col1, col2, col3, col4 = st.columns([1, 1, 1, 1])  # Equal width for each column
 
 # Create buttons for each question
 for i, question in enumerate(questions):
