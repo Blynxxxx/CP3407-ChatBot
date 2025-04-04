@@ -65,12 +65,13 @@ def chat():
     # Handling Chat Enquiry
     data = request.json
     query = data.get("message", "")
+    language = data.get("language", "en")[:2].lower()
 
     if not query:
         return jsonify({"response": "Error: Empty query!"}), 400
     
     try:
-        response = generate_faq_response(query)
+        response = generate_faq_response(query, language=language)
         return jsonify({"response": response})
     except Exception as e:
         print(f"❌ Error processing FAQ query: {e}")

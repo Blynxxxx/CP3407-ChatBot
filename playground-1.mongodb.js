@@ -26,22 +26,6 @@ db.getCollection('files').deleteMany({});
     { upsert: true }
   );
 
-  db.getCollection('files').updateMany(
-  {'filename': 'index_faiss'},
-   {"$set": {
-    "file_type": "faiss",'uploaded_at': new Date()
-    }},
-  { upsert: true}
-  );
-
-  db.getCollection('files').updateMany(
-    {'filename': 'index_pkl'},
-     {"$set": {
-      "file_type": "pkl",'uploaded_at': new Date()
-      }},
-    { upsert: true}
-    );
-
 // Query the files stored in the database
 const fileCount = db.getCollection('files').countDocuments();
 console.log(`Total uploaded files: ${fileCount}`);
@@ -49,3 +33,8 @@ console.log(`Total uploaded files: ${fileCount}`);
 // Show all files
 db.getCollection('files').find().toArray();
 
+db.fs.files.find({}, { filename: 1, length: 1, uploadDate: 1 }).forEach(file => {
+  print(`${file.filename} | size: ${file.length} | uploaded: ${file.uploadDate}`)
+})
+
+db.fs.files.find().toArray();

@@ -45,6 +45,11 @@ class MongoDB:
     def upload_file(self, file_path):
         file_name = os.path.basename(file_path)
 
+        existing_file = self.db["fs.files"].find_one({"filename": file_name})
+        if existing_file:
+            print(f"✅ file {file_name} already stored in GridFS, ID: {existing_file['_id']}")
+            return existing_file["_id"]
+        
         with open(file_path, "rb") as f:
             file_data = f.read()
             file_id = self.fs.put(file_data, filename=file_name)
@@ -61,9 +66,28 @@ class MongoDB:
     def close_connection(self):
         self.client.close()
 
-    def upload_faiss_index(self, faiss_path="vector_stores/orientation/index.faiss", 
-                            pkl_path="vector_stores/orientation/index.pkl"):
+    def upload_faiss_index(self, faiss_path, pkl_path, language="en"):
+    #Upload index.faiss and index.pkl from FAISS to MongoDB GridFS.Save the files with a language prefix such as en_index.faiss / en_index.pkl.
+        for path in [faiss_path, pkl_path]:
+            if not os.path.exists(path):
+                print(f"❌ File does not exist, skip upload：{path}")
+                continue
 
-       return
+        # Generate filenames with language prefixes, e.g. en_index.faiss
+            filename = os.path.basename(path)
+            lang_tagged_filename = f"{language}_{filename}"  # 例如 zh_index.pkl
+
+        # Delete the old version (if it exists)
+            existing_file = self.db["fs.files"].find_one({"filename": lang_tagged_filename})
+            if existing_file:
+                self.fs.delete(existing_file["_id"])
+                print(f"♻️ Old documents deleted：{lang_tagged_filename}")
+
+        # Upload a new file
+            with open(path, "rb") as f:
+                file_id = self.fs.put(f, filename=lang_tagged_filename)
+                print(f"☁️ New files uploaded：{lang_tagged_filename}，ID: {file_id}")
+        
+
 
    

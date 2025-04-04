@@ -11,8 +11,6 @@ load_dotenv()
 # Streamlit UI
 st.set_page_config(page_title="Orientation Chatbot", page_icon="JCU.png", layout="wide")
 
-st.markdown("<h1 style='text-align: center;'>JCU Orientation Chatbot 🎈</h1>", unsafe_allow_html=True)
-
 #############################################################################################
 # Load translations from languages.json
 def load_translations():
@@ -30,6 +28,14 @@ def get_text(key):
     if lang not in translations or key not in translations[lang]:
         lang = "English"
     return translations[lang].get(key, "Choose languages...")
+
+# Initialize session state
+if "language" not in st.session_state:
+    st.session_state.language = "English"
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+st.markdown(f"<h1 style='text-align: center;'>{get_text('app_title')}</h1>", unsafe_allow_html=True)
 
 def translate_text(text, source_language, target_language):
     # Preserve specific terms
@@ -67,7 +73,7 @@ def send_message_to_backend(message, user_language, chat_history=None):
 
         payload = {
             "message": translated_message,
-            "language": "English"
+            "language": user_language
         }
 
         if chat_history:
@@ -119,34 +125,56 @@ def handle_input(input_content):
     st.session_state.messages.append({"role": "assistant", "content": chatbot_response})
     st.rerun()
 
-# Initialize session state
-if "language" not in st.session_state:
-    st.session_state.language = "English"
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
 # Display conversation history
 for message in st.session_state.messages:
     role = get_text("user") if message["role"] == "user" else get_text("assistant")
     display_message(role, message["content"])
 
-# Quick Questions Section - Positioned above User Input
-st.markdown("### Quick Questions")
-questions = [
-    "When is the orientation for full time and part time?",
-    "Compulsory documents for Student Pass Formalities?",
-    "What do I need to prepare for orientation?",
-    "About James Cook University Singapore"
-]
+quick_faqs = {
+    "en": {
+        "When is the orientation for full time and part time?":
+            "Orientation for **Full-Time** and **Part-Time** students is held from **Monday, 06 January to Friday, 17 January 2025**. Full-time programs include Business, IT, Science, and more. Part-time students attend sessions relevant to their programs during the same period.",
 
-# Create columns with equal width
-col1, col2, col3, col4 = st.columns([1, 1, 1, 1])  # Equal width for each column
+        "Compulsory documents for Student Pass Formalities?":
+            "The required documents include:\n- Passport\n- IPA Letter\n- Academic Certificates and Transcripts\n- Proof of English Proficiency (e.g., IELTS)\n- Signed Advisory Note, Letter of Offer, Student Contract\n- NRIC/Passport and ICA Card\n- Additional documents if applicable",
 
-# Create buttons for each question
-for i, question in enumerate(questions):
-    with eval(f'col{i % 4 + 1}'):
-        if st.button(question):
-            handle_input(question)  # Handle quick question input
+        "What do I need to prepare for orientation?":
+            "Before orientation, complete Student Pass formalities, activate your JCU Email and Student ID, set up your LearnJCU account, and prepare any required documents for verification. You should also check the JCU Calendar and bring your own device (laptop recommended).",
+
+        "About James Cook University Singapore":
+            "James Cook University Singapore (JCUS) is a branch campus of James Cook University Australia. Located in Sims Drive, Singapore, it offers programs in Business, IT, Psychology, Science, Education, and more. JCUS promotes student development through academic excellence and support services."
+    },
+    "zh": {
+        "When is the orientation for full time and part time?":
+            "迎新会时间为：**2025年1月6日（星期一）至1月17日（星期五）**，适用于全日制与非全日制学生。\n全日制课程包括：商科、IT、理科等。\n非全日制学生将在同一期间参加相关活动。",
+
+        "Compulsory documents for Student Pass Formalities?":
+            "您需要准备的文件包括：\n- 护照\n- IPA信\n- 学术证书与成绩单\n- 英语水平证明（如IELTS）\n- 咨询说明书、录取通知书与学生合同\n- 身份证或护照及ICA登机卡\n- 如适用，其他补充材料",
+
+        "What do I need to prepare for orientation?":
+            "在迎新前，您需要完成学生准证手续、激活JCU邮箱和学号，注册LearnJCU账户，并准备好核查所需文件。\n建议携带笔记本电脑并查看JCU日历了解重要时间节点。",
+
+        "About James Cook University Singapore":
+            "詹姆斯库克大学新加坡校区（JCUS）是詹姆斯库克大学澳大利亚的海外分校，位于新加坡Sims Drive，提供商科、IT、心理学、理科、教育等课程，并致力于通过高质量教学和全面学生支持服务促进学生发展。"
+    }
+}
+
+# Render quick buttons with fixed answers
+st.markdown(f"### {get_text('quick_questions')}")
+lang_code = "zh" if st.session_state.language == "中文" else "en"
+
+col1, col2, col3, col4 = st.columns(4)
+buttons = list(quick_faqs[lang_code].keys())
+cols = [col1, col2, col3, col4]
+
+for i, question in enumerate(buttons):
+    display_text = get_text(question)  # Show translated Chinese buttons
+    with cols[i % 4]:
+        if st.button(display_text):
+            answer = quick_faqs[lang_code][question]  # The answer is still in English.
+            st.session_state.messages.append({"role": "user", "content": display_text})
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+            st.rerun()
 
 # User input
 if user_input := st.chat_input(get_text("chat_placeholder")):
