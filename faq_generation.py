@@ -254,7 +254,7 @@ def generate_faq_response(query, chat_history=None, language="en"):
     prompt = generate_prompt(query, language)
 
     # Initialising the LLM
-    llm = GoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)
+    llm = GoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2, google_api_key=gemini_api_key)
     chain = load_qa_chain(llm=llm, chain_type="stuff")
 
 
